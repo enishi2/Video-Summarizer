@@ -20,7 +20,7 @@ A Python tool that automatically transcribes and summarizes YouTube videos. Afte
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/your-username/youtube-summarizer.git
+git clone https://github.com/enishi2/Video-Summarizer.git
 cd youtube-summarizer
 ```
 
