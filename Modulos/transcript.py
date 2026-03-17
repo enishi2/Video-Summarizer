@@ -46,7 +46,7 @@ def _buscar_legenda(video_id: str) -> str | None:
     idiomas = [i.strip() for i in idiomas]
 
     try:
-        dados = YouTubeTranscriptApi.get_transcript(
+        dados = YouTubeTranscriptApi.fetch(
             video_id,
             languages=idiomas
         )
@@ -86,7 +86,7 @@ def _transcrever_audio(url: str, provedor: str) -> str:
             "postprocessors": [{
                 "key": "FFmpegExtractAudio",
                 "preferredcodec": "mp3",
-                "preferredquality": "64",
+                "preferredquality": "32",
             }],
             "quiet": True,
         }
