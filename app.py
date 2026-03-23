@@ -103,7 +103,22 @@ if botao and url:
 
         except Exception as e:
             status.update(label="Error", state="error")
-            st.error(f"{e}")
+            erro = str(e)
+
+            if "403" in erro or "Forbidden" in erro:
+                st.error(
+                    "YouTube blocked the audio download from the server. "
+                    "This happens with videos that have no captions available. "
+                    "Try a video that has captions enabled."
+                )
+            elif "No transcript" in erro or "TranscriptsDisabled" in erro:
+                st.error(
+                    "This video has no captions available and audio download "
+                    "is blocked by YouTube on cloud servers. "
+                    "Try a video with captions enabled."
+                )
+            else:
+                st.error(f"{erro}")
             st.stop()
 
 elif botao and not url:
