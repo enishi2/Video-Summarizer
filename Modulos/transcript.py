@@ -77,7 +77,7 @@ def _transcrever_audio(url: str, provedor: str) -> str:
 
     import yt_dlp
 
-    print("🎵 Baixando áudio do vídeo (pode demorar)...")
+    print("Baixando áudio do vídeo (pode demorar)...")
 
     with tempfile.TemporaryDirectory() as pasta_temp:
         opcoes_ydl = {
@@ -102,7 +102,7 @@ def _transcrever_audio(url: str, provedor: str) -> str:
                 break
 
         tamanho = os.path.getsize(caminho_audio) / (1024 * 1024)
-        print(f"✅ Áudio baixado ({tamanho:.1f} MB). Transcrevendo com Whisper...")
+        print(f"Áudio baixado ({tamanho:.1f} MB). Transcrevendo com Whisper...")
 
         # ── Groq ──────────────────────────────────────────────
         if provedor == "groq":
@@ -126,7 +126,7 @@ def _transcrever_audio(url: str, provedor: str) -> str:
                     response_format="text",
                 )
 
-    print(f"✅ Transcrição por áudio concluída ({len(resultado)} chars).")
+    print(f"Transcrição por áudio concluída ({len(resultado)} chars).")
     return resultado
 
 
@@ -146,6 +146,6 @@ def obter_transcricao(url: str, provedor: str) -> tuple[str, str]:
     if legenda:
         return legenda, "legenda"
 
-    print("📭 Sem legenda. Tentando via áudio...")
+    print("Sem legenda. Tentando via áudio...")
     audio_texto = _transcrever_audio(url, provedor)
     return audio_texto, "audio"
