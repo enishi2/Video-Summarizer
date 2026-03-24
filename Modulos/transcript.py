@@ -35,33 +35,45 @@ def _buscar_legenda(video_id: str) -> str | None:
         from youtube_transcript_api import YouTubeTranscriptApi
 
         api = YouTubeTranscriptApi()
-        
-        # lista todas as legendas disponíveis no vídeo
         lista = api.list(video_id)
-        
-        idiomas = os.getenv("TRANSCRIPT_LANGUAGES", "pt,en").split(",")
-        idiomas = [i.strip() for i in idiomas]
-        
-        # tenta encontrar nos idiomas preferidos
+
+        # coleta todos os códigos de idioma disponíveis
+        todos = [(t.language_code, t.is_generated) for t in lista]
+        print(f"   Legendas disponíveis: {todos}")
+
+        idiomas_pref = os.getenv("TRANSCRIPT_LANGUAGES", "pt,en").split(",")
+        idiomas_pref = [i.strip() for i in idiomas_pref]
+
         transcript = None
-        for idioma in idiomas:
+
+        # 1. tenta legenda manual nos idiomas preferidos
+        for idioma in idiomas_pref:
             try:
                 transcript = lista.find_transcript([idioma])
-                break
+                if not transcript.is_generated:
+                    print(f"   Usando legenda manual: {idioma}")
+                    break
+                transcript = None  # era gerada, continua procurando manual
             except Exception:
                 continue
-        
-        # se não achou no idioma preferido, pega qualquer um disponível
+
+        # 2. tenta legenda gerada automaticamente nos idiomas preferidos
+        if transcript is None:
+            for idioma in idiomas_pref:
+                try:
+                    transcript = lista.find_transcript([idioma])
+                    print(f"   Usando legenda automática: {idioma}")
+                    break
+                except Exception:
+                    continue
+
+        # 3. pega qualquer legenda disponível como último recurso
         if transcript is None:
             try:
-                transcript = lista.find_generated_transcript(
-                    [t.language_code for t in lista]
-                )
-            except Exception:
-                transcript = next(iter(lista), None)
-        
-        if transcript is None:
-            return None
+                transcript = next(iter(lista))
+                print(f"   Usando primeira legenda disponível: {transcript.language_code}")
+            except StopIteration:
+                return None
 
         dados = transcript.fetch()
         texto = " ".join(item.text for item in dados)

@@ -71,50 +71,47 @@ def corrigir_texto(transcricao: str, provedor: str) -> str:
 
 
 
-def gerar_resumo(texto_corrigido: str, provedor: str) -> str:
-    """Gera resumo estruturado. Para textos longos, divide e consolida."""
-    print("Gerando resumo...")
+def gerar_resumo(texto_corrigido: str, provedor: str, idioma: str = "English") -> str:
+    """Gera resumo estruturado no idioma escolhido."""
+    print(f"Gerando resumo em {idioma}...")
 
     partes = _dividir_em_chunks(texto_corrigido, tamanho=10000)
 
     if len(partes) == 1:
-        return _resumir_parte(partes[0], provedor, final=True)
-
-    # Textos longos: resume cada parte, depois consolida
+        return _resumir_parte(partes[0], provedor, final=True, idioma=idioma)
     resumos_parciais = []
     for i, parte in enumerate(partes):
         print(f"   Resumindo parte {i+1}/{len(partes)}...")
-        resumo_parcial = _resumir_parte(parte, provedor, final=False)
+        resumo_parcial = _resumir_parte(parte, provedor, final=False, idioma=idioma)
         resumos_parciais.append(resumo_parcial)
 
     print("   Consolidando resumos...")
     texto_consolidar = "\n\n---\n\n".join(resumos_parciais)
-    return _resumir_parte(texto_consolidar, provedor, final=True)
+    return _resumir_parte(texto_consolidar, provedor, final=True, idioma=idioma)
 
 
-
-
-def _resumir_parte(texto: str, provedor: str, final: bool) -> str:
-    """Resume uma parte do texto. Se final=True, usa formato estruturado."""
+def _resumir_parte(texto: str, provedor: str, final: bool, idioma: str = "English") -> str:
+    """Resume uma parte do texto no idioma escolhido."""
     if final:
         instrucao = (
-            "Crie um resumo completo e bem estruturado deste vídeo.\n\n"
-            "Use exatamente este formato:\n\n"
-            "## Tema Principal\n"
-            "[Uma frase descrevendo o assunto central]\n\n"
-            "## Pontos Principais\n"
-            "[Lista dos tópicos e ideias mais importantes]\n\n"
-            "## Detalhes Relevantes\n"
-            "[Informações específicas, exemplos, dados mencionados]\n\n"
-            "## Conclusão\n"
-            "[Mensagem final do vídeo]\n\n"
-            "Seja detalhado e fiel ao conteúdo original."
+            f"Create a complete and well-structured summary of this video content "
+            f"in {idioma}. Use exactly this format:\n\n"
+            f"## Main Topic\n"
+            f"[One sentence describing the central subject]\n\n"
+            f"## Key Points\n"
+            f"[List of the most important topics and ideas]\n\n"
+            f"## Relevant Details\n"
+            f"[Specific information, examples, data mentioned]\n\n"
+            f"## Conclusion\n"
+            f"[Final message of the video]\n\n"
+            f"Be detailed and faithful to the original content. "
+            f"Write the entire summary in {idioma}."
         )
     else:
         instrucao = (
-            "Faça um resumo detalhado desta parte de uma transcrição. "
-            "Mantenha todos os pontos importantes. "
-            "Este resumo será usado para criar um resumo final."
+            f"Summarize this part of a video transcript in {idioma}. "
+            f"Keep all important points, examples, and specific information. "
+            f"Write in {idioma}."
         )
 
     mensagens = [

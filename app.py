@@ -72,6 +72,25 @@ url = st.text_input(
 
 botao = st.button("Summarize", type="primary", use_container_width=True)
 
+# ── Idioma do resumo ───────────────────────────────────────────
+idioma_opcoes = {
+    "English": "English",
+    "Português": "Portuguese",
+    "Español": "Spanish",
+    "Français": "French",
+    "Deutsch": "German",
+    "Italiano": "Italian",
+    "日本語": "Japanese",
+    "中文": "Chinese",
+}
+
+idioma_label = st.selectbox(
+    "Summary language",
+    options=list(idioma_opcoes.keys()),
+    index=0,
+)
+idioma_resumo = idioma_opcoes[idioma_label]
+
 # ── Processamento ──────────────────────────────────────────────────────────
 if botao and url:
     # Se a URL mudou, limpa o estado anterior
@@ -94,7 +113,7 @@ if botao and url:
             transcricao_corrigida = corrigir_texto(transcricao_bruta, provedor)
 
             st.write("Generating summary...")
-            resumo = gerar_resumo(transcricao_corrigida, provedor)
+            resumo = gerar_resumo(transcricao_corrigida, provedor, idioma=idioma_resumo)
 
             st.session_state.transcricao = transcricao_corrigida
             st.session_state.resumo = resumo
