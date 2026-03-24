@@ -30,32 +30,44 @@ def _extrair_video_id(url: str) -> str:
 
 
 
-
 def _buscar_legenda(video_id: str) -> str | None:
-    """
-    Busca legenda do YouTube nos idiomas configurados.
-    Retorna o texto ou None se não houver legenda.
-    """
-    from youtube_transcript_api import (
-        YouTubeTranscriptApi,
-        NoTranscriptFound,
-        TranscriptsDisabled
-    )
-
-    idiomas = os.getenv("TRANSCRIPT_LANGUAGES", "pt,en").split(",")
-    idiomas = [i.strip() for i in idiomas]
-
     try:
-        dados = YouTubeTranscriptApi.fetch(
-            video_id,
-            languages=idiomas
-        )
-        # 'dados' é uma lista de dicts: [{"text": "...", "start": 0.5}, ...]
-        texto = " ".join(item["text"] for item in dados)
-        print(f"Legenda encontrada ({len(texto)} caracteres).")
+        from youtube_transcript_api import YouTubeTranscriptApi
+
+        api = YouTubeTranscriptApi()
+        
+        # lista todas as legendas disponíveis no vídeo
+        lista = api.list(video_id)
+        
+        idiomas = os.getenv("TRANSCRIPT_LANGUAGES", "pt,en").split(",")
+        idiomas = [i.strip() for i in idiomas]
+        
+        # tenta encontrar nos idiomas preferidos
+        transcript = None
+        for idioma in idiomas:
+            try:
+                transcript = lista.find_transcript([idioma])
+                break
+            except Exception:
+                continue
+        
+        # se não achou no idioma preferido, pega qualquer um disponível
+        if transcript is None:
+            try:
+                transcript = lista.find_generated_transcript(
+                    [t.language_code for t in lista]
+                )
+            except Exception:
+                transcript = next(iter(lista), None)
+        
+        if transcript is None:
+            return None
+
+        dados = transcript.fetch()
+        texto = " ".join(item.text for item in dados)
+        print(f"✅ Legenda encontrada ({len(texto)} caracteres).")
         return texto
-    except (NoTranscriptFound, TranscriptsDisabled):
-        return None
+
     except Exception as e:
         print(f"Erro ao buscar legenda: {e}")
         return None
