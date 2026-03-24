@@ -2,7 +2,7 @@ import os
 import re
 import tempfile
 from dotenv import load_dotenv
-
+import time
 
 """
 transcript.py
@@ -113,14 +113,39 @@ def _transcrever_audio(url: str, provedor: str) -> str:
                 "preferredquality": "32",
             }],
             "quiet": True,
+
+            "extractor_args": {
+                "youtube": {
+                    "player_client": ["android"]
+                }
+            },
+
                 # Simula um navegador comum para evitar o bloqueio
             "http_headers": {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     },
         }
 
-        with yt_dlp.YoutubeDL(opcoes_ydl) as ydl:
-            ydl.download([url])
+
+        for tentativa in range(3):
+            try:
+                print(f"Tentando baixar áudio... (tentativa {tentativa+1})")
+
+                with yt_dlp.YoutubeDL(opcoes_ydl) as ydl:
+                    ydl.download([url])
+
+                print("Download concluído!")
+                break
+
+            except Exception as e:
+                print(f"Tentativa {tentativa+1} falhou: {e}")
+                time.sleep(2)
+
+        else:
+            raise RuntimeError("Falha ao baixar áudio após várias tentativas")
+
+
+
 
         # Encontra o arquivo gerado
         caminho_audio = None
@@ -128,6 +153,9 @@ def _transcrever_audio(url: str, provedor: str) -> str:
             if arquivo.startswith("audio"):
                 caminho_audio = os.path.join(pasta_temp, arquivo)
                 break
+
+        if not caminho_audio:
+            raise RuntimeError("Arquivo de áudio não encontrado após download")
 
         tamanho = os.path.getsize(caminho_audio) / (1024 * 1024)
         print(f"Áudio baixado ({tamanho:.1f} MB). Transcrevendo com Whisper...")
@@ -154,8 +182,9 @@ def _transcrever_audio(url: str, provedor: str) -> str:
                     response_format="text",
                 )
 
-    print(f"Transcrição por áudio concluída ({len(resultado)} chars).")
-    return resultado
+    texto_final = str(resultado)
+    print(f"Transcrição por áudio concluída ({len(texto_final)} chars).")
+    return texto_final
 
 
 
