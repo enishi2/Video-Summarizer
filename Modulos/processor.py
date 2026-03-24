@@ -94,8 +94,11 @@ def _resumir_parte(texto: str, provedor: str, final: bool, idioma: str = "Englis
     """Resume uma parte do texto no idioma escolhido."""
     if final:
         instrucao = (
-            f"Create a complete and well-structured summary of this video content "
-            f"in {idioma}. Use exactly this format:\n\n"
+            f"IMPORTANT: You must write your ENTIRE response in {idioma} only. "
+            f"Do NOT use any other language. "
+            f"Even if the input text is in Portuguese, Spanish, or any other language, "
+            f"your response must be 100% in {idioma}.\n\n"
+            f"Create a complete summary of this video using exactly this format:\n\n"
             f"## Main Topic\n"
             f"[One sentence describing the central subject]\n\n"
             f"## Key Points\n"
@@ -104,14 +107,14 @@ def _resumir_parte(texto: str, provedor: str, final: bool, idioma: str = "Englis
             f"[Specific information, examples, data mentioned]\n\n"
             f"## Conclusion\n"
             f"[Final message of the video]\n\n"
-            f"Be detailed and faithful to the original content. "
-            f"Write the entire summary in {idioma}."
+            f"Respond exclusively in {idioma}. This is mandatory."
         )
     else:
         instrucao = (
-            f"Summarize this part of a video transcript in {idioma}. "
-            f"Keep all important points, examples, and specific information. "
-            f"Write in {idioma}."
+            f"IMPORTANT: Respond exclusively in {idioma}. "
+            f"Do NOT use any other language regardless of the input language.\n\n"
+            f"Summarize this part of a video transcript keeping all important points. "
+            f"Write everything in {idioma}. This is mandatory."
         )
 
     mensagens = [

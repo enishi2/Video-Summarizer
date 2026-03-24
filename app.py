@@ -7,6 +7,7 @@ Substitui o terminal — roda no navegador, local ou em servidor.
 
 import os
 import streamlit as st
+from Modulos.transcript import obter_transcricao
 
 # ── Configuração da página ─────────────────────────────────────────────────
 st.set_page_config(
