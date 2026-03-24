@@ -7,6 +7,7 @@ Substitui o terminal — roda no navegador, local ou em servidor.
 
 import os
 import streamlit as st
+from Modulos.transcript import obter_transcricao, _extrair_video_id
 
 # ── Configuração da página ─────────────────────────────────────────────────
 st.set_page_config(
@@ -105,9 +106,17 @@ if botao and url:
     with st.status("Processing video...", expanded=True) as status:
         try:
             st.write("Fetching transcript...")
+            try:
+                # testa a legenda diretamente para ver o erro real
+                from youtube_transcript_api import YouTubeTranscriptApi
+                api = YouTubeTranscriptApi()
+                lista = api.list(_extrair_video_id(url))
+                legendas = [(t.language_code, t.is_generated) for t in lista]
+                st.write(f"Captions found: {legendas}")
+            except Exception as e:
+                st.write(f"Caption error: {type(e).__name__}: {e}")
+
             transcricao_bruta, metodo = obter_transcricao(url, provedor)
-            metodo_label = "YouTube captions" if metodo == "legenda" else "audio transcription"
-            st.write(f"Transcript obtained via {metodo_label}.")
 
             st.write("Correcting text...")
             transcricao_corrigida = corrigir_texto(transcricao_bruta, provedor)
