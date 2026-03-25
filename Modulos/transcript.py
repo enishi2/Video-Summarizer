@@ -30,14 +30,17 @@ def _extrair_video_id(url: str) -> str:
 
 
 
-def _buscar_legenda(video_id: str) -> str | None:
+def _buscar_legenda(video_id: str) -> tuple[str | None, str]:
+    """
+    Retorna (texto, "") se achou legenda.
+    Retorna (None, motivo_do_erro) se não achou.
+    """
     try:
         from youtube_transcript_api import YouTubeTranscriptApi
 
         api = YouTubeTranscriptApi()
         lista = api.list(video_id)
 
-        # coleta todos os códigos de idioma disponíveis
         todos = [(t.language_code, t.is_generated) for t in lista]
         print(f"   Legendas disponíveis: {todos}")
 
@@ -49,15 +52,15 @@ def _buscar_legenda(video_id: str) -> str | None:
         # 1. tenta legenda manual nos idiomas preferidos
         for idioma in idiomas_pref:
             try:
-                transcript = lista.find_transcript([idioma])
-                if not transcript.is_generated:
+                t = lista.find_transcript([idioma])
+                if not t.is_generated:
+                    transcript = t
                     print(f"   Usando legenda manual: {idioma}")
                     break
-                transcript = None  # era gerada, continua procurando manual
             except Exception:
                 continue
 
-        # 2. tenta legenda gerada automaticamente nos idiomas preferidos
+        # 2. tenta legenda automática nos idiomas preferidos
         if transcript is None:
             for idioma in idiomas_pref:
                 try:
@@ -67,22 +70,22 @@ def _buscar_legenda(video_id: str) -> str | None:
                 except Exception:
                     continue
 
-        # 3. pega qualquer legenda disponível como último recurso
+        # 3. qualquer legenda disponível como último recurso
         if transcript is None:
             try:
                 transcript = next(iter(lista))
-                print(f"   Usando primeira legenda disponível: {transcript.language_code}")
+                print(f"   Usando: {transcript.language_code}")
             except StopIteration:
-                return None
+                return None, "No captions available for this video"
 
         dados = transcript.fetch()
         texto = " ".join(item.text for item in dados)
-        print(f"✅ Legenda encontrada ({len(texto)} caracteres).")
-        return texto
+        print(f"Legenda encontrada ({len(texto)} caracteres).")
+        return texto, ""
 
     except Exception as e:
-        print(f"Erro ao buscar legenda: {e}")
-        return None
+        # agora o erro aparece na tela em vez de sumir
+        return None, str(e)
     
 
 
@@ -198,11 +201,13 @@ def obter_transcricao(url: str, provedor: str) -> tuple[str, str]:
     print(f"ID do vídeo: {video_id}")
 
     print("Buscando legenda...")
-    legenda = _buscar_legenda(video_id)
+    legenda, erro_legenda = _buscar_legenda(video_id)
 
     if legenda:
         return legenda, "legenda"
 
-    print("Sem legenda. Tentando via áudio...")
-    audio_texto = _transcrever_audio(url, provedor)
-    return audio_texto, "audio"
+    # Se não achou legenda, lança erro claro — sem tentar áudio no cloud
+    raise RuntimeError(
+        f"No captions found for this video. "
+        f"Caption error: {erro_legenda}"
+    )
