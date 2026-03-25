@@ -9,7 +9,7 @@ from Modulos.AI_Provider import chamar_ia
 
 # Máximo de caracteres enviados de uma vez para a IA
 # Transcrições longas são divididas em partes menores
-TAMANHO_CHUNK = 8000
+TAMANHO_CHUNK = 4000
 
 
 def _dividir_em_chunks(texto: str, tamanho: int = TAMANHO_CHUNK) -> list[str]:

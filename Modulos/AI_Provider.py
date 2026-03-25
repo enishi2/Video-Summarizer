@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+import time
 
 load_dotenv()
 
@@ -18,7 +19,7 @@ def _testar_groq():
         from groq import Groq
         cliente = Groq(api_key=chave)
         cliente.chat.completions.create(
-            model="llama-3.1-8b-instant",
+            model="llama-3.3-70b-versatile",
             messages=[{"role": "user", "content": "oi"}],
             max_tokens=5,
         )
@@ -94,12 +95,10 @@ def detectar_provedor():
     )
 
 
-def chamar_ia(provedor: str, mensagens: list, max_tokens: int = 1024) -> str:
-    """
-    Chama o provedor escolhido com uma lista de mensagens.
-    Formato: [{"role": "user"/"assistant"/"system", "content": "..."}]
-    Retorna o texto da resposta.
-    """
+import time
+
+def _chamar_ia_direto(provedor: str, mensagens: list, max_tokens: int = 1024) -> str:
+    """Faz a chamada direta ao provedor sem retry."""
     if provedor == "openai":
         from openai import OpenAI
         cliente = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -109,12 +108,12 @@ def chamar_ia(provedor: str, mensagens: list, max_tokens: int = 1024) -> str:
             max_tokens=max_tokens,
         )
         return resposta.choices[0].message.content.strip()
-    
+
     elif provedor == "groq":
         from groq import Groq
         cliente = Groq(api_key=os.getenv("GROQ_API_KEY"))
         resposta = cliente.chat.completions.create(
-            model="llama-3.1-8b-instant",
+            model="llama-3.3-70b-versatile",
             messages=mensagens,
             max_tokens=max_tokens,
         )
@@ -122,7 +121,6 @@ def chamar_ia(provedor: str, mensagens: list, max_tokens: int = 1024) -> str:
 
     elif provedor == "claude":
         import anthropic
-        # Claude separa mensagens "system" das demais
         system_msg = ""
         msgs_filtradas = []
         for m in mensagens:
@@ -145,3 +143,31 @@ def chamar_ia(provedor: str, mensagens: list, max_tokens: int = 1024) -> str:
 
     else:
         raise ValueError(f"Provedor desconhecido: {provedor}")
+
+
+def chamar_ia(provedor: str, mensagens: list, max_tokens: int = 1024) -> str:
+    """
+    Chama o provedor escolhido com retry automático em caso de rate limit.
+    Formato: [{"role": "user"/"assistant"/"system", "content": "..."}]
+    Retorna o texto da resposta.
+    """
+    tentativas = 3
+    espera = 3  # começa com 3s, dobra a cada falha: 3s → 6s → 12s
+
+    for tentativa in range(tentativas):
+        try:
+            return _chamar_ia_direto(provedor, mensagens, max_tokens)
+        except Exception as e:
+            erro = str(e)
+            if "429" in erro or "rate_limit" in erro.lower():
+                if tentativa < tentativas - 1:
+                    print(f"   Rate limit atingido. Aguardando {espera}s antes de tentar novamente...")
+                    time.sleep(espera)
+                    espera *= 2
+                else:
+                    raise RuntimeError(
+                        "Rate limit atingido após 3 tentativas. "
+                        "Aguarde alguns segundos e tente novamente."
+                    )
+            else:
+                raise  # qualquer outro erro sobe normalmente
