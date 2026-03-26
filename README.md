@@ -2,7 +2,6 @@
 
 A Python tool that automatically transcribes and summarizes YouTube videos. Available as a web app or command-line tool. After generating the summary, an interactive chatbot lets you ask questions about the video content.
 
-Live demo: [video-summarizerenishi2.streamlit.app](https://video-summarizerenishi2.streamlit.app/)
 
 ---
 
