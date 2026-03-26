@@ -31,61 +31,126 @@ def _extrair_video_id(url: str) -> str:
 
 
 def _buscar_legenda(video_id: str) -> tuple[str | None, str]:
-    """
-    Retorna (texto, "") se achou legenda.
-    Retorna (None, motivo_do_erro) se não achou.
-    """
     try:
         from youtube_transcript_api import YouTubeTranscriptApi
+        from youtube_transcript_api.proxies import WebshareProxyConfig
+        import os
 
-        api = YouTubeTranscriptApi()
+        proxy_user = os.getenv("PROXY_USERNAME")
+        proxy_pass = os.getenv("PROXY_PASSWORD")
+
+        if proxy_user and proxy_pass:
+            print("Usando proxy...")
+            api = YouTubeTranscriptApi(
+                proxy_config=WebshareProxyConfig(
+                    proxy_username=proxy_user,
+                    proxy_password=proxy_pass,
+                )
+            )
+        else:
+            print("Sem proxy...")
+            api = YouTubeTranscriptApi()
+
         lista = api.list(video_id)
-
-        todos = [(t.language_code, t.is_generated) for t in lista]
-        print(f"   Legendas disponíveis: {todos}")
 
         idiomas_pref = os.getenv("TRANSCRIPT_LANGUAGES", "pt,en").split(",")
         idiomas_pref = [i.strip() for i in idiomas_pref]
 
         transcript = None
 
-        # 1. tenta legenda manual nos idiomas preferidos
         for idioma in idiomas_pref:
             try:
                 t = lista.find_transcript([idioma])
                 if not t.is_generated:
                     transcript = t
-                    print(f"   Usando legenda manual: {idioma}")
                     break
-            except Exception:
+            except:
                 continue
 
-        # 2. tenta legenda automática nos idiomas preferidos
         if transcript is None:
             for idioma in idiomas_pref:
                 try:
                     transcript = lista.find_transcript([idioma])
-                    print(f"   Usando legenda automática: {idioma}")
                     break
-                except Exception:
+                except:
                     continue
 
-        # 3. qualquer legenda disponível como último recurso
         if transcript is None:
             try:
                 transcript = next(iter(lista))
-                print(f"   Usando: {transcript.language_code}")
             except StopIteration:
-                return None, "No captions available for this video"
+                return None, "No captions available"
 
         dados = transcript.fetch()
         texto = " ".join(item.text for item in dados)
-        print(f"Legenda encontrada ({len(texto)} caracteres).")
+
         return texto, ""
 
     except Exception as e:
-        # agora o erro aparece na tela em vez de sumir
         return None, str(e)
+
+
+
+
+
+
+
+# def _buscar_legenda(video_id: str) -> tuple[str | None, str]:
+#     """
+#     Retorna (texto, "") se achou legenda.
+#     Retorna (None, motivo_do_erro) se não achou.
+#     """
+#     try:
+#         from youtube_transcript_api import YouTubeTranscriptApi
+
+#         api = YouTubeTranscriptApi()
+#         lista = api.list(video_id)
+
+#         todos = [(t.language_code, t.is_generated) for t in lista]
+#         print(f"   Legendas disponíveis: {todos}")
+
+#         idiomas_pref = os.getenv("TRANSCRIPT_LANGUAGES", "pt,en").split(",")
+#         idiomas_pref = [i.strip() for i in idiomas_pref]
+
+#         transcript = None
+
+#         # 1. tenta legenda manual nos idiomas preferidos
+#         for idioma in idiomas_pref:
+#             try:
+#                 t = lista.find_transcript([idioma])
+#                 if not t.is_generated:
+#                     transcript = t
+#                     print(f"   Usando legenda manual: {idioma}")
+#                     break
+#             except Exception:
+#                 continue
+
+#         # 2. tenta legenda automática nos idiomas preferidos
+#         if transcript is None:
+#             for idioma in idiomas_pref:
+#                 try:
+#                     transcript = lista.find_transcript([idioma])
+#                     print(f"   Usando legenda automática: {idioma}")
+#                     break
+#                 except Exception:
+#                     continue
+
+#         # 3. qualquer legenda disponível como último recurso
+#         if transcript is None:
+#             try:
+#                 transcript = next(iter(lista))
+#                 print(f"   Usando: {transcript.language_code}")
+#             except StopIteration:
+#                 return None, "No captions available for this video"
+
+#         dados = transcript.fetch()
+#         texto = " ".join(item.text for item in dados)
+#         print(f"Legenda encontrada ({len(texto)} caracteres).")
+#         return texto, ""
+
+#     except Exception as e:
+#         # agora o erro aparece na tela em vez de sumir
+#         return None, str(e)
     
 
 
@@ -206,8 +271,13 @@ def obter_transcricao(url: str, provedor: str) -> tuple[str, str]:
     if legenda:
         return legenda, "legenda"
 
-    # Se não achou legenda, lança erro claro — sem tentar áudio no cloud
-    raise RuntimeError(
-        f"No captions found for this video. "
-        f"Caption error: {erro_legenda}"
-    )
+    print("Legenda falhou, tentando áudio...")
+    texto_audio = _transcrever_audio(url, provedor)
+
+    return texto_audio, "audio"
+
+    # # Se não achou legenda, lança erro claro — sem tentar áudio no cloud
+    # raise RuntimeError(
+    #     f"No captions found for this video. "
+    #     f"Caption error: {erro_legenda}"
+    # )
