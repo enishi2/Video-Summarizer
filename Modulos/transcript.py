@@ -45,8 +45,6 @@ def _buscar_legenda(video_id: str) -> tuple[str | None, str]:
                 proxy_config=WebshareProxyConfig(
                     proxy_username=proxy_user,
                     proxy_password=proxy_pass,
-                    proxy_host="p.webshare.io",
-                    proxy_port=80,
                 )
             )
         else:
