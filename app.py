@@ -24,7 +24,8 @@ def _carregar_chaves():
     """
     try:
         # Streamlit Cloud — chaves configuradas no painel
-        for chave in ["GROQ_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY"]:
+        for chave in ["GROQ_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY",
+                      "PROXY_USERNAME", "PROXY_PASSWORD"]:
             valor = st.secrets.get(chave, "")
             if valor:
                 os.environ[chave] = valor
