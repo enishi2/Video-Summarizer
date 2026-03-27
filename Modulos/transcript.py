@@ -262,14 +262,20 @@ def obter_transcricao(url: str, provedor: str) -> tuple[str, str]:
     video_id = _extrair_video_id(url)
     print(f"ID do vídeo: {video_id}")
 
+    # DEBUG — remove depois
+    is_cloud_raw = os.getenv("IS_CLOUD", "NAO_ENCONTRADO")
+    print(f"IS_CLOUD valor: '{is_cloud_raw}'")
+
     print("Buscando legenda...")
     legenda, erro_legenda = _buscar_legenda(video_id)
+
+    print(f"Legenda resultado: {bool(legenda)}, erro: {erro_legenda}")
 
     if legenda:
         return legenda, "legenda"
 
-    # detecta se está no cloud
     rodando_no_cloud = os.getenv("IS_CLOUD", "").strip().lower() == "true"
+    print(f"rodando_no_cloud: {rodando_no_cloud}")
 
     if rodando_no_cloud:
         raise RuntimeError(
@@ -277,7 +283,6 @@ def obter_transcricao(url: str, provedor: str) -> tuple[str, str]:
             f"Caption error: {erro_legenda}"
         )
 
-    # só tenta áudio se estiver rodando localmente
     print("Sem legenda. Tentando via áudio (local)...")
     texto_audio = _transcrever_audio(url, provedor)
     return texto_audio, "audio"
