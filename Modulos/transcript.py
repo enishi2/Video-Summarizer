@@ -259,11 +259,6 @@ def _transcrever_audio(url: str, provedor: str) -> str:
 
 
 def obter_transcricao(url: str, provedor: str) -> tuple[str, str]:
-    """
-    Ponto de entrada principal.
-    Retorna (texto_transcrito, metodo_usado).
-    metodo_usado: 'legenda' ou 'audio'
-    """
     video_id = _extrair_video_id(url)
     print(f"ID do vídeo: {video_id}")
 
@@ -273,13 +268,16 @@ def obter_transcricao(url: str, provedor: str) -> tuple[str, str]:
     if legenda:
         return legenda, "legenda"
 
-    print("Legenda falhou, tentando áudio...")
+    # detecta se está no cloud
+    rodando_no_cloud = os.getenv("IS_CLOUD", "").strip().lower() == "true"
+
+    if rodando_no_cloud:
+        raise RuntimeError(
+            f"No captions found for this video. "
+            f"Caption error: {erro_legenda}"
+        )
+
+    # só tenta áudio se estiver rodando localmente
+    print("Sem legenda. Tentando via áudio (local)...")
     texto_audio = _transcrever_audio(url, provedor)
-
     return texto_audio, "audio"
-
-    # # Se não achou legenda, lança erro claro — sem tentar áudio no cloud
-    # raise RuntimeError(
-    #     f"No captions found for this video. "
-    #     f"Caption error: {erro_legenda}"
-    # )
